@@ -15,9 +15,9 @@ Install Python.
 
 ### The script
 * open [main.py](scripts\main.py)
-* modify this line - navigate to the folder with RRTEX files.
+* modify this line - use path to the folder with RRTEX files.
     ```python
-    src_dir = 'C:/coh-data/uisga/data/ui'           # Extracted using EssenceEditor, open Company of Heroes 3\anvil\archives\UI.sga
+    src_dir = 'C:/coh-data/uisga/data/ui'
     ```
 
 * run the script
