@@ -5,7 +5,7 @@ This repo stores scripts and instructions to extract images from COH3 files.
 ## Instructions
 
 ### Prerequisites
-Install Python 3
+Install Python 3.X (the script was created and tested with 3.8)
 
 ### Get the RRTEX files using Essence editor
 * Open `EssenceEditor.exe` located in your Company of Heroes 3 folder
