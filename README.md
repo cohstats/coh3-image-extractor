@@ -14,7 +14,7 @@ Install Python.
 * You should have your *.RRTEX UI files exported
 
 ### The script
-* open scripts/main.py
+* open `scripts/main.py`
 * modify this line - use path to the folder with RRTEX files.
     ```python
     src_dir = 'C:/coh-data/uisga/data/ui'
