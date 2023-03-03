@@ -5,12 +5,12 @@ This repo stores scripts and instructions to extract images from COH3 files.
 ## Instructions
 
 ### Prerequisites
-Install Python.
+Install Python 3
 
 ### Get the RRTEX files using Essence editor
-* Open essence editor
-* Open {your_coh_folder}\Company of Heroes 3\anvil\archives\UI.sga
-* Right click the folder in Essence editor -> Export -> choose location
+* Open `EssenceEditor.exe` located in your Company of Heroes 3 folder
+* In Essence editor, Open {your_coh_folder}\Company of Heroes 3\anvil\archives\UI.sga
+* Right click the folder in Essence editor -> Export and choose location folder where to export RRTEX files
 * You should have your *.RRTEX UI files exported
 
 ### The script
