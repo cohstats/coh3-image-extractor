@@ -23,6 +23,7 @@ Install requirements using:
 - `--src` Path to the folder with RRTEX files
 - `--format`  Output file format, default is tga which is the highest quality. You can switch to png. 
 - `--flatten` The output files will be in the same folder. Default is false, it will respect the folder structure of the source files.
+If you flatten the folders. It's possible that files with the same name will be overwritten.
 - Full example `python scripts/main.py --src S:\coh3\ui --format png --flatten`
 
 2. Exported images will be in `export/` folder, mirroring the folder structure of `src_dir`
