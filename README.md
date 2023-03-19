@@ -17,16 +17,17 @@ Install requirements using:
 * Right click the folder in Essence editor -> Export and choose location folder where to export RRTEX files
 * You should have your *.RRTEX UI files exported
 
-### The script
-* open `scripts/main.py`
-* modify this line - use path to the folder with RRTEX files.
-    ```python
-    src_dir = 'C:/coh-data/uisga/data/ui'
-    ```
 
-* run the script
-* converted images are extracted to `export/`, mirroring the folder structure of `src_dir`
-* check the `scripts\export\logreport.json` for details about conversion results.
+### Running the script
+1. Execute `python scripts/main.py --src S:\coh3\ui` from the root of the repo
+- `--src` - path to the folder with RRTEX files
+- You can specify the format, default is tga which is the highest quality. You can switch to png. 
+- You can specify the flatten option, which will flatten the folder structure. Default is false.
+- Full example `python scripts/main.py --src S:\coh3\ui --format png --flatten`
+
+2. Exported images will be in `export/` folder, mirroring the folder structure of `src_dir`
+3. Check the `scripts\export\logreport.json` for details about conversion results.
+
 
 ## Known bugs
 * there are some files (39/4479) we cannot convert at the moment. Ongoing investigation.
