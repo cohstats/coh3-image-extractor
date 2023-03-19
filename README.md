@@ -20,9 +20,9 @@ Install requirements using:
 
 ### Running the script
 1. Execute `python scripts/main.py --src S:\coh3\ui` from the root of the repo
-- `--src` - path to the folder with RRTEX files
-- You can specify the format, default is tga which is the highest quality. You can switch to png. 
-- You can specify the flatten option, which will flatten the folder structure. Default is false.
+- `--src` Path to the folder with RRTEX files
+- `--format`  Output file format, default is tga which is the highest quality. You can switch to png. 
+- `--flatten` The output files will be in the same folder. Default is false, it will respect the folder structure of the source files.
 - Full example `python scripts/main.py --src S:\coh3\ui --format png --flatten`
 
 2. Exported images will be in `export/` folder, mirroring the folder structure of `src_dir`
@@ -31,3 +31,8 @@ Install requirements using:
 
 ## Known bugs
 * there are some files (39/4479) we cannot convert at the moment. Ongoing investigation.
+
+
+### Contributing
+Original scripts and rrtex converter to tga by @rempAut ❤️
+Feel free to open issues and PRs.
