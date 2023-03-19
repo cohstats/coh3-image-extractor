@@ -1,0 +1,2 @@
+Pillow
+texture2ddecoder

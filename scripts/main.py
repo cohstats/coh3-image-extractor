@@ -15,7 +15,7 @@ from rrtex_to_tga import convert_rrtex
 #  the log report as a JSON file to the specified destination directory.
 
 # specify the source and destination directories
-src_dir = 'C:/coh-data/uisga/data/ui'           # Extracted using EssenceEditor, open Company of Heroes 3\anvil\archives\UI.sga
+src_dir = 'S:/coh3/ui'           # Extracted using EssenceEditor, open Company of Heroes 3\anvil\archives\UI.sga
 dest_dir = os.path.join(os.getcwd(), 'export')  # save under scripts/export
 
 stats = {}
