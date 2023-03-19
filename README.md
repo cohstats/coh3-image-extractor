@@ -35,5 +35,5 @@ If you flatten the folders. It's possible that files with the same name will be 
 
 
 ### Contributing
-Original scripts and rrtex converter to tga by @rempAut ❤️
+Original scripts and rrtex converter to tga by @rempAut ❤️  
 Feel free to open issues and PRs.
