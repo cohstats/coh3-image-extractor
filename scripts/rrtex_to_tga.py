@@ -81,12 +81,14 @@ def convert_rrtex(file_path_src: str, file_path_dest: str) -> None:
         except Exception as e:      
             error = f"convert_rrtex failed.\nException: {e}"
             raise Exception(error)
-        
-if __name__ == "__main__":
-    
-    
-    file_path_src = "C:/coh-data/coh3/in/assault_engineer_us_portrait.rrtex"
-    file_path_dest ="C:/coh-data/coh3/out/assault_engineer_us_portrait.tga"
-    convert_rrtex(file_path_src, file_path_dest)
-    print('saved!')
-    
+
+# #################################
+# This is a test code
+# if __name__ == "__main__":
+#
+#
+#     file_path_src = "C:/coh-data/coh3/in/assault_engineer_us_portrait.rrtex"
+#     file_path_dest ="C:/coh-data/coh3/out/assault_engineer_us_portrait.tga"
+#     convert_rrtex(file_path_src, file_path_dest)
+#     print('saved!')
+#
