@@ -30,6 +30,12 @@ If you flatten the folders. It's possible that files with the same name will be 
 3. Check the `scripts\export\logreport.json` for details about conversion results.
 
 
+## Extracting map images
+- In Essence editor open file "ScenariosMP.sga"
+- You fill see all the maps
+- Open the map folder and look for the .rtx file
+- Open the image and do export
+
 ## Known bugs
 * there are some files (39/4479) we cannot convert at the moment. Ongoing investigation.
 
