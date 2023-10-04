@@ -36,6 +36,9 @@ If you flatten the folders. It's possible that files with the same name will be 
 - Open the map folder and look for the .rtx file
 - Open the image and do export
 
+https://www.alecjacobson.com/weblog/?p=2064
+
+
 ## Known bugs
 * there are some files (39/4479) we cannot convert at the moment. Ongoing investigation.
 
