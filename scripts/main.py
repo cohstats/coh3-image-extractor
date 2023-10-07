@@ -63,11 +63,11 @@ if __name__ == "__main__":
     stats['rrtex'] = 0
     stats['converted'] = 0
     stats['failed'] = 0
-    stats['skipped'] = 0
+    # stats['skipped'] = 0
 
     details = {}
     details['failed'] = []
-    details['skipped'] = []
+    # details['skipped'] = []
 
     # browse the source directory recursively
     for dirpath, dirnames, filenames in os.walk(src_dir):
@@ -80,9 +80,9 @@ if __name__ == "__main__":
             src_file = os.path.join(dirpath, file)
             file_extension = file.split('.')[1]
             file_name = file.split('.')[0]
-            print(f"processing {file_name}")
             # if rrtex, try to convert
             if file_extension == 'rrtex':
+                print(f"processing {file_name}")
                 stats['rrtex'] += 1
                 dest_file = os.path.join(dest_subdir, file_name + '.' + image_format)
                 if flatten:
@@ -93,9 +93,9 @@ if __name__ == "__main__":
                 except Exception as e:
                     stats['failed'] += 1
                     log_details(details['failed'],src_file, str(e))
-                else:
-                    stats['skipped'] += 1
-                    log_details(details['skipped'],src_file, "Not RRTEX file." )
+                # else:
+                #     stats['skipped'] += 1
+                #     log_details(details['skipped'],src_file, "Not RRTEX file." )
 
 print(f"{stats}")
 

@@ -38,10 +38,14 @@ def convert_rrtex(file_path_src: str, file_path_dest: str) -> None:
         bytes_tman = buff[tman_end+12 : tdat_start]
         bytes_tdat = buff[tdat_end:]
 
-        # Unpack the width and height from the byte data
+        # Unpack the width and height from the byte data.
+        
+        # The new struct fields in version 6 can be ignored as the real issue
+        # happens when the zlib decompress step tries with the unused data with some files (no idea why).
+        
         tman_header = struct.unpack("<iiiiiiiiiii", bytes_tman[:44]) # unpack to 11 * 32bit ints
-        _, width, height, _, _, texture_compression, mip_count, _, mip_texture_count , size_uncompressed , size_compressed  = tman_header
-
+        uk1, width, height, _uk2, _uk3, texture_compression, mip_count, _uk4, mip_texture_count, size_uncompressed, size_compressed = tman_header
+    
         try:
             Decompressor = zlib.decompressobj()
             # get the first decompressed chunk
@@ -50,17 +54,24 @@ def convert_rrtex(file_path_src: str, file_path_dest: str) -> None:
             # unused compressed data
             unused_data = Decompressor.unused_data
 
-            # while there are still unused_data(not decompressed), try decompressing them
-            while len(unused_data) > 0:
-                Next_decompressor = zlib.decompressobj()
-                chunk = Next_decompressor.decompress(unused_data)
-                decompressed_chunks.append(chunk)
-                unused_data = Next_decompressor.unused_data
+            # while there are still unused_data(not decompressed), try decompressing them, otherwise assign it directly.
+            try:
+                while len(unused_data) > 0:
+                    Next_decompressor = zlib.decompressobj()
+                    chunk = Next_decompressor.decompress(unused_data)
+                    decompressed_chunks.append(chunk)
+                    unused_data = Next_decompressor.unused_data
 
-            # assamble decompressed_data from decompressed_chunks
-            decompressed_data = b''
-            for chunk in decompressed_chunks:
-                decompressed_data += chunk
+                # assamble decompressed_data from decompressed_chunks
+                decompressed_data = b''
+                for chunk in decompressed_chunks:
+                    decompressed_data += chunk
+            except:
+                # assamble decompressed_data from decompressed_chunks
+                decompressed_data = b''
+                for chunk in decompressed_chunks:
+                    decompressed_data += chunk
+
 
             # decode with correct texture compression. Data are decoded to BGRA
             if texture_compression == 28:
@@ -80,6 +91,7 @@ def convert_rrtex(file_path_src: str, file_path_dest: str) -> None:
 
         except Exception as e:      
             error = f"convert_rrtex failed.\nException: {e}"
+            print(error)
             raise Exception(error)
 
 # #################################
