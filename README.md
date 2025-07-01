@@ -20,14 +20,46 @@ Install requirements using:
 
 ### Running the script
 1. Execute `python scripts/main.py --src S:\coh3\ui` from the root of the repo
+
+**Command-line Parameters:**
 - `--src` Path to the folder with RRTEX files
-- `--format`  Output file format, default is tga which is the highest quality. You can switch to png. 
+- `--format` Output file format. Supported formats:
+  - `tga` (default) - Highest quality, uncompressed
+  - `png` - Lossless compression with transparency support
+  - `webp` - Modern format with excellent compression and transparency support
+- `--dst` or `--destination` Destination directory for output files (default: `export`)
 - `--flatten` The output files will be in the same folder. Default is false, it will respect the folder structure of the source files.
 If you flatten the folders. It's possible that files with the same name will be overwritten.
-- Full example `python scripts/main.py --src S:\coh3\ui --format png --flatten`
+- `--threads` Number of worker threads for parallel processing. Default is auto-detected based on CPU cores.
 
-2. Exported images will be in `export/` folder, mirroring the folder structure of `src_dir`
-3. Check the `scripts\export\logreport.json` for details about conversion results.
+**Usage Examples:**
+```bash
+# Basic usage with default settings (TGA format, export/ directory)
+python scripts/main.py --src S:\coh3\ui
+
+# Convert to PNG format
+python scripts/main.py --src S:\coh3\ui --format png
+
+# Convert to WebP format with custom destination
+python scripts/main.py --src S:\coh3\ui --format webp --dst my_images
+
+# Full example with all options
+python scripts/main.py --src S:\coh3\ui --format webp --dst output --flatten --threads 8
+```
+
+2. Exported images will be in the specified destination folder (default: `export/`), mirroring the folder structure of `src_dir`
+3. Check the `logreport.json` in the destination folder for details about conversion results.
+
+**Format Comparison:**
+- **TGA**: Uncompressed, highest quality, largest file size. Best for archival or when file size is not a concern.
+- **PNG**: Lossless compression, good quality, moderate file size. Good balance between quality and size.
+- **WebP**: Modern format with excellent compression, smallest file size while maintaining high quality. Recommended for web use or when storage space is limited.
+
+**Performance Notes:**
+- The script uses multithreading to process files in parallel, significantly improving performance on multi-core systems
+- Thread count automatically defaults to the number of CPU cores detected
+- Processing time and throughput statistics are included in the log report
+- WebP conversion uses 85% quality setting for optimal balance between file size and visual quality
 
 
 ## Extracting map images
