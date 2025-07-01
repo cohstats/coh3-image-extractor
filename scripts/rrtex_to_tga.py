@@ -92,8 +92,7 @@ def convert_rrtex(file_path_src: str, file_path_dest: str) -> None:
                         # If decompression fails, stop trying
                         break
 
-                # Extract only the first mipmap level from the largest chunk
-                # Calculate the size of the first mipmap level
+                # Calculate the size of the first mipmap level (highest resolution)
                 if texture_compression == 28:  # BC7
                     block_size = 16
                 elif texture_compression == 22:  # BC3
@@ -108,19 +107,51 @@ def convert_rrtex(file_path_src: str, file_path_dest: str) -> None:
                 mip0_size = num_blocks * block_size
 
                 # For mipped files, each decompressed chunk contains a mip level with a 16-byte header
-                # The largest chunk contains the first (highest resolution) mip level
-                # Find the largest chunk and extract the mip data (skip the 16-byte header)
-                if len(decompressed_chunks) > 1:
-                    largest_chunk = max(decompressed_chunks, key=len)
-                    if len(largest_chunk) >= mip0_size + 16:
-                        # Skip the 16-byte header and take exactly mip0_size bytes
-                        decompressed_data = largest_chunk[16:16 + mip0_size]
+                # The header format is: [mip_level (4 bytes), width (4 bytes), height (4 bytes), ...]
+                # We need to find the chunk with mip_level = 0 (highest resolution)
+                mip0_chunk = None
+
+                for chunk in decompressed_chunks:
+                    if len(chunk) >= 16:
+                        # Parse the 16-byte header to get mip level, width, height
+                        try:
+                            mip_level, chunk_width, chunk_height = struct.unpack('<III', chunk[:12])
+                            # Check if this is mip level 0 and matches our expected dimensions
+                            if mip_level == 0 and chunk_width == width and chunk_height == height:
+                                mip0_chunk = chunk
+                                break
+                        except:
+                            # If header parsing fails, continue to next chunk
+                            continue
+
+                if mip0_chunk is not None:
+                    # Extract mip0 data (skip the 16-byte header)
+                    if len(mip0_chunk) >= 16 + mip0_size:
+                        decompressed_data = mip0_chunk[16:16 + mip0_size]
                     else:
-                        # Fallback: assemble all chunks and take first mip0_size bytes
-                        decompressed_data = b''.join(decompressed_chunks)[:mip0_size]
+                        # If chunk is smaller than expected, use what we have after the header
+                        decompressed_data = mip0_chunk[16:]
+                        # Pad with zeros if necessary (shouldn't happen with valid files)
+                        if len(decompressed_data) < mip0_size:
+                            decompressed_data += b'\x00' * (mip0_size - len(decompressed_data))
                 else:
-                    # Single chunk, take first mip0_size bytes
-                    decompressed_data = decompressed_chunks[0][:mip0_size]
+                    # Fallback: use the largest chunk (old behavior for compatibility)
+                    if len(decompressed_chunks) > 1:
+                        largest_chunk = max(decompressed_chunks, key=len)
+                        if len(largest_chunk) >= 16 + mip0_size:
+                            # Skip the 16-byte header and take exactly mip0_size bytes
+                            decompressed_data = largest_chunk[16:16 + mip0_size]
+                        elif len(largest_chunk) >= mip0_size:
+                            # If largest chunk is exactly mip0_size, use it directly (no header)
+                            decompressed_data = largest_chunk[:mip0_size]
+                        else:
+                            # Last resort: assemble all chunks and take first mip0_size bytes
+                            # This was the source of the duplication bug - avoid if possible
+                            print("Warning: Using fallback concatenation method for mipped file")
+                            decompressed_data = b''.join(decompressed_chunks)[:mip0_size]
+                    else:
+                        # Single chunk, take first mip0_size bytes
+                        decompressed_data = decompressed_chunks[0][:mip0_size]
 
             else:
                 # Original implementation for non-mipped files
