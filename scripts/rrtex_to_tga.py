@@ -4,6 +4,9 @@ from PIL import Image
 import zlib
 import os
 
+# WebP conversion quality setting (0-100)
+WEBP_QUALITY = 85
+
 def print_bytes_data(byte_data):
     for i in range(0, len(byte_data), 4):
         try:
@@ -196,7 +199,15 @@ def convert_rrtex(file_path_src: str, file_path_dest: str) -> None:
                 raise Exception(f"Unknown texture compression type: {texture_compression}")
 
             dec_img = Image.frombytes("RGBA", (width, height), decoded_data, 'raw', ("BGRA"))
-            dec_img.save(file_path_dest)
+
+            # Save with format-specific options
+            file_ext = os.path.splitext(file_path_dest)[1].lower()
+            if file_ext == '.webp':
+                # Save as WebP with quality setting, preserving transparency
+                dec_img.save(file_path_dest, 'WEBP', quality=WEBP_QUALITY, lossless=False)
+            else:
+                # For TGA, PNG and other formats, use default settings
+                dec_img.save(file_path_dest)
 
         except Exception as e:      
             error = f"convert_rrtex failed.\nException: {e}"

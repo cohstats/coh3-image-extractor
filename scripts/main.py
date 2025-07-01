@@ -120,9 +120,12 @@ if __name__ == "__main__":
     # Detect available CPU cores for default thread count
     default_threads = os.cpu_count() or 4  # fallback to 4 if cpu_count() returns None
 
-    parser = argparse.ArgumentParser(description='Convert rrtex files to tga.')
+    parser = argparse.ArgumentParser(description='Convert rrtex files to image formats (TGA, PNG, WebP).')
     parser.add_argument('--src', metavar='--src', type=str, help='path to source directory')
-    parser.add_argument('--format', metavar='format', type=str, default='tga', help='image output format (default: tga)')
+    parser.add_argument('--format', metavar='format', type=str, default='tga',
+                       help='image output format: tga (highest quality), png, webp (default: tga)')
+    parser.add_argument('--dst', '--destination', metavar='destination', type=str, default='export',
+                       help='destination directory for output files (default: export)')
     parser.add_argument('--flatten', dest='flatten', action='store_true', help='description of parameter (default: False)')
     parser.add_argument('--threads', metavar='threads', type=int, default=default_threads,
                        help=f'number of worker threads (default: {default_threads} - detected CPU cores)')
@@ -131,11 +134,25 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     src_dir = args.src
-    image_format = args.format
+    image_format = args.format.lower()  # normalize to lowercase
+    destination = args.dst
     flatten = args.flatten
     num_threads = args.threads
 
-    dest_dir = os.path.join(os.getcwd(), 'export/')
+    # Validate image format
+    supported_formats = ['tga', 'png', 'webp']
+    if image_format not in supported_formats:
+        print(f"Error: Unsupported format '{image_format}'. Supported formats: {', '.join(supported_formats)}")
+        sys.exit(1)
+
+    # Set up destination directory
+    if os.path.isabs(destination):
+        dest_dir = destination
+    else:
+        dest_dir = os.path.join(os.getcwd(), destination)
+
+    # Ensure destination directory exists
+    os.makedirs(dest_dir, exist_ok=True)
 
     print("Starting image extraction ...")
     print(f"Source directory: {src_dir}")
