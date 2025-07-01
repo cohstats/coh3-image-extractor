@@ -21,13 +21,19 @@ Install requirements using:
 ### Running the script
 1. Execute `python scripts/main.py --src S:\coh3\ui` from the root of the repo
 - `--src` Path to the folder with RRTEX files
-- `--format`  Output file format, default is tga which is the highest quality. You can switch to png. 
+- `--format`  Output file format, default is tga which is the highest quality. You can switch to png.
 - `--flatten` The output files will be in the same folder. Default is false, it will respect the folder structure of the source files.
 If you flatten the folders. It's possible that files with the same name will be overwritten.
-- Full example `python scripts/main.py --src S:\coh3\ui --format png --flatten`
+- `--threads` Number of worker threads for parallel processing. Default is auto-detected based on CPU cores.
+- Full example `python scripts/main.py --src S:\coh3\ui --format png --flatten --threads 8`
 
 2. Exported images will be in `export/` folder, mirroring the folder structure of `src_dir`
 3. Check the `scripts\export\logreport.json` for details about conversion results.
+
+**Performance Notes:**
+- The script uses multithreading to process files in parallel, significantly improving performance on multi-core systems
+- Thread count automatically defaults to the number of CPU cores detected
+- Processing time and throughput statistics are included in the log report
 
 
 ## Extracting map images
