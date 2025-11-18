@@ -7,6 +7,13 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from rrtex_to_tga import convert_rrtex
 
+# Configure stdout to use UTF-8 encoding to handle Unicode characters
+# This prevents UnicodeEncodeError when printing special characters
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 # This Python script aims to convert a collection of .rrtex files into .tga files.
 # The script starts by specifying the source and destination directories where the files are stored and will be saved,respectively.
 
@@ -112,7 +119,12 @@ def process_file(file_info, image_format, flatten, dest_dir, thread_stats):
         return True, file_name, None
 
     except Exception as e:
-        error_msg = str(e)
+        # Safely convert exception to string, handling any encoding issues
+        try:
+            error_msg = str(e)
+        except Exception:
+            error_msg = "Unknown error (could not convert exception to string)"
+
         thread_stats.increment_failed(src_file, error_msg)
         return False, file_name, error_msg
 
@@ -213,37 +225,63 @@ if __name__ == "__main__":
                 completed_files += 1
 
                 if success:
-                    print(f"[{completed_files}/{total_files}] ✓ {processed_name}")
+                    # Use safe print with error handling
+                    try:
+                        print(f"[{completed_files}/{total_files}] ✓ {processed_name}")
+                    except Exception:
+                        # Fallback to ASCII-safe characters if Unicode fails
+                        print(f"[{completed_files}/{total_files}] OK {processed_name}")
                 else:
-                    print(f"[{completed_files}/{total_files}] ✗ {processed_name} - {error_msg}")
+                    try:
+                        print(f"[{completed_files}/{total_files}] ✗ {processed_name} - {error_msg}")
+                    except Exception:
+                        # Fallback to ASCII-safe characters if Unicode fails
+                        print(f"[{completed_files}/{total_files}] FAIL {processed_name} - {error_msg}")
 
                 # Show progress every 10 files or at the end
                 if completed_files % 10 == 0 or completed_files == total_files:
                     current_stats = thread_stats.get_stats()
                     elapsed = time.time() - start_time
                     rate = completed_files / elapsed if elapsed > 0 else 0
-                    print(f"Progress: {completed_files}/{total_files} files, "
-                          f"{current_stats['converted']} converted, "
-                          f"{current_stats['failed']} failed, "
-                          f"{rate:.1f} files/sec")
+                    try:
+                        print(f"Progress: {completed_files}/{total_files} files, "
+                              f"{current_stats['converted']} converted, "
+                              f"{current_stats['failed']} failed, "
+                              f"{rate:.1f} files/sec")
+                    except Exception:
+                        # Fallback if print fails
+                        print(f"Progress: {completed_files}/{total_files} files")
 
             except Exception as e:
-                print(f"[{completed_files}/{total_files}] ✗ {file_name} - Unexpected error: {e}")
                 completed_files += 1
+                try:
+                    print(f"[{completed_files}/{total_files}] ✗ {file_name} - Unexpected error: {e}")
+                except Exception:
+                    # Fallback to ASCII-safe characters if Unicode fails
+                    print(f"[{completed_files}/{total_files}] FAIL {file_name} - Unexpected error")
 
     # Final statistics
     final_stats = thread_stats.get_stats()
     final_details = thread_stats.get_details()
     elapsed_time = time.time() - start_time
 
-    print(f"\n=== Conversion Complete ===")
-    print(f"Total time: {elapsed_time:.2f} seconds")
-    print(f"Average rate: {completed_files/elapsed_time:.1f} files/sec")
-    print(f"Final statistics: {final_stats}")
+    try:
+        print(f"\n=== Conversion Complete ===")
+        print(f"Total time: {elapsed_time:.2f} seconds")
+        print(f"Average rate: {completed_files/elapsed_time:.1f} files/sec")
+        print(f"Final statistics: {final_stats}")
+    except Exception as e:
+        # Fallback if printing fails
+        print("\nConversion Complete")
+        print(f"Total time: {elapsed_time:.2f} seconds")
 
-    logreport = {}
-    logreport['stats'] = final_stats
-    logreport['details'] = final_details
-    logreport['processing_time_seconds'] = elapsed_time
-    logreport['files_per_second'] = completed_files/elapsed_time if elapsed_time > 0 else 0
-    save_dict_to_json(logreport, dest_dir, "logreport.json")
+    # Save log report with error handling
+    try:
+        logreport = {}
+        logreport['stats'] = final_stats
+        logreport['details'] = final_details
+        logreport['processing_time_seconds'] = elapsed_time
+        logreport['files_per_second'] = completed_files/elapsed_time if elapsed_time > 0 else 0
+        save_dict_to_json(logreport, dest_dir, "logreport.json")
+    except Exception as e:
+        print(f"Warning: Failed to save log report: {e}")
