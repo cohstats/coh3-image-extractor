@@ -29,7 +29,52 @@ def get_data_positions(buffer, data):
     """
     found_pos = buffer.find(data)
     return (found_pos, found_pos+len(data))
-    
+
+
+def find_zlib_header(bytes_tdat):
+    """
+    Find the first zlib header in the data.
+    Returns the offset of the first zlib header, or -1 if not found.
+    """
+    for i in range(len(bytes_tdat) - 1):
+        if bytes_tdat[i] == 0x78 and bytes_tdat[i+1] in [0x01, 0x5e, 0x9c, 0xda]:
+            return i
+    return -1
+
+
+def try_decompress_mipped(bytes_tdat):
+    """
+    Try multiple decompression strategies for mipped files.
+    Returns: (first_chunk, unused_data) or raises exception if all fail.
+    """
+    # Strategy 1: Standard offset 16
+    try:
+        d = zlib.decompressobj()
+        result = d.decompress(bytes_tdat[16:])
+        return (result, d.unused_data)
+    except:
+        pass
+
+    # Strategy 2: Find first zlib header
+    try:
+        offset = find_zlib_header(bytes_tdat)
+        if offset >= 0:
+            d = zlib.decompressobj()
+            result = d.decompress(bytes_tdat[offset:])
+            return (result, d.unused_data)
+    except:
+        pass
+
+    # Strategy 3: Offset 0
+    try:
+        d = zlib.decompressobj()
+        result = d.decompress(bytes_tdat)
+        return (result, d.unused_data)
+    except:
+        pass
+
+    raise Exception("All decompression strategies failed for mipped file")
+
 
 def convert_rrtex(file_path_src: str, file_path_dest: str) -> None:
     with open(file_path_src, "rb") as f:
@@ -55,29 +100,37 @@ def convert_rrtex(file_path_src: str, file_path_dest: str) -> None:
             is_mipped = os.path.basename(file_path_src).lower().endswith('_mipped.rrtex') or '_mipped.' in os.path.basename(file_path_src).lower()
 
             if is_mipped:
-                print("Processing mipped file")
-                # For mipped files, we need to handle multiple zlib streams properly
-                Decompressor = zlib.decompressobj()
-                # get the first decompressed chunk
-                chunk = Decompressor.decompress(bytes_tdat[16:])    # magic shift by 16
-                decompressed_chunks = [chunk[16:]]                  # create list, another magic shift by 16
-                # unused compressed data
-                unused_data = Decompressor.unused_data
+                # For mipped files, try multiple decompression strategies
+                first_chunk, unused_data = try_decompress_mipped(bytes_tdat)
 
-                # while there are still unused_data(not decompressed), try decompressing them
+                # Process the first chunk - it might have a header
+                # Try to detect if there's a 16-byte header
+                if len(first_chunk) >= 16:
+                    # Check if first 12 bytes look like a mip header (mip_level, width, height)
+                    try:
+                        potential_mip_level, potential_width, potential_height = struct.unpack('<III', first_chunk[:12])
+                        # If values are reasonable, assume it's a header
+                        if potential_mip_level < 20 and potential_width <= 4096 and potential_height <= 4096:
+                            decompressed_chunks = [first_chunk[16:]]
+                        else:
+                            decompressed_chunks = [first_chunk]
+                    except:
+                        decompressed_chunks = [first_chunk]
+                else:
+                    decompressed_chunks = [first_chunk]
+
+                # Process remaining chunks
                 remaining_data = unused_data
                 chunk_count = 1
                 max_chunks = 20  # Safety limit
 
                 while len(remaining_data) > 0 and chunk_count < max_chunks:
                     try:
-                        # For mipped files, we need to find the next zlib header
-                        # as there might be padding between compressed blocks
+                        # Find the next zlib header
                         found_header = False
                         for i in range(len(remaining_data) - 1):
                             if remaining_data[i] == 0x78 and remaining_data[i+1] in [0xda, 0x9c, 0x01, 0x5e]:
                                 if i > 0:
-                                    # Skip padding bytes to get to the zlib header
                                     remaining_data = remaining_data[i:]
                                 found_header = True
                                 break
@@ -92,7 +145,6 @@ def convert_rrtex(file_path_src: str, file_path_dest: str) -> None:
                         chunk_count += 1
 
                     except Exception:
-                        # If decompression fails, stop trying
                         break
 
                 # Calculate the size of the first mipmap level (highest resolution)
@@ -104,27 +156,22 @@ def convert_rrtex(file_path_src: str, file_path_dest: str) -> None:
                     block_size = 8
                 else:
                     raise Exception(f"Unknown texture compression type: {texture_compression}")
+
                 width_mip = max(1, width)
                 height_mip = max(1, height)
                 num_blocks = ((width_mip + 3) // 4) * ((height_mip + 3) // 4)
                 mip0_size = num_blocks * block_size
 
-                # For mipped files, each decompressed chunk contains a mip level with a 16-byte header
-                # The header format is: [mip_level (4 bytes), width (4 bytes), height (4 bytes), ...]
-                # We need to find the chunk with mip_level = 0 (highest resolution)
+                # Try to find mip level 0 chunk
                 mip0_chunk = None
-
                 for chunk in decompressed_chunks:
                     if len(chunk) >= 16:
-                        # Parse the 16-byte header to get mip level, width, height
                         try:
                             mip_level, chunk_width, chunk_height = struct.unpack('<III', chunk[:12])
-                            # Check if this is mip level 0 and matches our expected dimensions
                             if mip_level == 0 and chunk_width == width and chunk_height == height:
                                 mip0_chunk = chunk
                                 break
                         except:
-                            # If header parsing fails, continue to next chunk
                             continue
 
                 if mip0_chunk is not None:
@@ -132,29 +179,21 @@ def convert_rrtex(file_path_src: str, file_path_dest: str) -> None:
                     if len(mip0_chunk) >= 16 + mip0_size:
                         decompressed_data = mip0_chunk[16:16 + mip0_size]
                     else:
-                        # If chunk is smaller than expected, use what we have after the header
                         decompressed_data = mip0_chunk[16:]
-                        # Pad with zeros if necessary (shouldn't happen with valid files)
                         if len(decompressed_data) < mip0_size:
                             decompressed_data += b'\x00' * (mip0_size - len(decompressed_data))
                 else:
-                    # Fallback: use the largest chunk (old behavior for compatibility)
-                    if len(decompressed_chunks) > 1:
-                        largest_chunk = max(decompressed_chunks, key=len)
-                        if len(largest_chunk) >= 16 + mip0_size:
-                            # Skip the 16-byte header and take exactly mip0_size bytes
-                            decompressed_data = largest_chunk[16:16 + mip0_size]
-                        elif len(largest_chunk) >= mip0_size:
-                            # If largest chunk is exactly mip0_size, use it directly (no header)
-                            decompressed_data = largest_chunk[:mip0_size]
+                    # Fallback: use the first/largest chunk
+                    if len(decompressed_chunks) > 0:
+                        # Try first chunk
+                        if len(decompressed_chunks[0]) >= mip0_size:
+                            decompressed_data = decompressed_chunks[0][:mip0_size]
                         else:
-                            # Last resort: assemble all chunks and take first mip0_size bytes
-                            # This was the source of the duplication bug - avoid if possible
-                            print("Warning: Using fallback concatenation method for mipped file")
-                            decompressed_data = b''.join(decompressed_chunks)[:mip0_size]
-                    else:
-                        # Single chunk, take first mip0_size bytes
-                        decompressed_data = decompressed_chunks[0][:mip0_size]
+                            # Concatenate all chunks and take what we need
+                            all_data = b''.join(decompressed_chunks)
+                            decompressed_data = all_data[:mip0_size]
+                            if len(decompressed_data) < mip0_size:
+                                decompressed_data += b'\x00' * (mip0_size - len(decompressed_data))
 
             else:
                 # Original implementation for non-mipped files
